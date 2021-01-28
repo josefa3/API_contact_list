@@ -30,7 +30,7 @@ def handle_invalid_usage(error):
 def sitemap():
     return generate_sitemap(app)
 
-@app.route('/contact', methods=['GET'])
+@app.route('/contacts', methods=['GET'])
 def handle_contacts():
     contacts = Contact.query.all()
     response_body = []
@@ -38,7 +38,7 @@ def handle_contacts():
         response_body.append(contact.serialize()) #serialize pasa un diccionario
     return jsonify(response_body), 200
 
-@app.route('/contact', methods=['POST'])
+@app.route('/contacts', methods=['POST'])
 def add_new_contact():
     # First we get the payload json
     body = request.get_json()
@@ -62,39 +62,46 @@ def add_new_contact():
         print(error.args) 
         return jsonify("NOT OK"), 500
 
-@app.route('/contact/<contact_id>', methods=['PUT', 'GET'])
+@app.route('/contacts/<int:id>', methods=['PUT', 'GET', 'PATCH'])
 def get_single_contact(id):
     """
     Single person
     """
     body = request.get_json()
-    if request.method == 'PUT':
+    if request.method == 'PATCH':
         contact = Contact.query.get(id)
         if contact is None:
             raise APIException('Contact not found', status_code=404)
         if "full_name" in body:
             contact.full_name = body["full_name"]
-        if "email" in body:
-            contact.email = body["email"]
         if "address" in body:
             contact.address = body['address'] 
-        if "phone" in phone:
+        if "phone" in body:
             contact.phone = body['phone']
         db.session.commit()
         return jsonify(contact.serialize()), 200
     if request.method == 'GET':
         contact = Contact.query.get(id)
         return jsonify(contact.serialize()), 200
+    if request.method == 'PUT':
+        contact = Contact.query.get(id)
+        if contact is None:
+            raise APIException('Contact not found', status_code=404)
+        else: 
+            contact.full_name = body["full_name"]
+            contact.address = body['address'] 
+            contact.phone = body['phone']
+            db.session.commit()
+            return jsonify(contact.serialize()), 200
 
-    return "Invalid Method", 404
-
-@app.route('/contact/<contact_id>', methods=['DELETE'])
+@app.route('/contacts/<int:id>', methods=['DELETE'])
 def delete_contact(id):
     contact = Contact.query.get(id)
     if contact is None:
         raise APIException('Contact not found', status_code=404)
     db.session.delete(contact)
     db.session.commit()
+    return jsonify([]), 204
 
 # this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
